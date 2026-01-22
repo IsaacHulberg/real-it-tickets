@@ -30,6 +30,9 @@ if (-not (Test-Path $usersDir)) { New-Item -ItemType Directory -Path $usersDir -
 $logFile = Join-Path $logDir "stage2.log"
 $usersCSV = Join-Path $usersDir "created_users.csv"
 
+# Critical error tracking
+$script:HadCriticalError = $false
+
 function Write-Log {
     param([string]$Message)
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -41,7 +44,7 @@ function Write-Log {
 function Wait-ForActiveDirectory {
     param([int]$MaxAttempts = 60, [int]$WaitSeconds = 5)
     Write-Log "Waiting for Active Directory services to be ready..."
-    
+
     for ($i = 1; $i -le $MaxAttempts; $i++) {
         try {
             $domain = Get-ADDomain -ErrorAction Stop
@@ -52,34 +55,112 @@ function Wait-ForActiveDirectory {
             Start-Sleep -Seconds $WaitSeconds
         }
     }
-    
+
     Write-Log "ERROR: Active Directory did not become ready within $(($MaxAttempts * $WaitSeconds) / 60) minutes"
     return $false
 }
 
+function Ensure-OU {
+    param(
+        [string]$Name,
+        [string]$Path
+    )
+
+    $ouDN = "OU=$Name,$Path"
+    try {
+        if (-not (Get-ADOrganizationalUnit -Identity $ouDN -ErrorAction SilentlyContinue)) {
+            New-ADOrganizationalUnit -Name $Name -Path $Path -ErrorAction Stop
+            Write-Log "Created OU: $Name"
+        } else {
+            Write-Log "OU already exists: $Name"
+        }
+        return $ouDN
+    } catch {
+        Write-Log "ERROR creating OU $Name : $($_.Exception.Message)"
+        $script:HadCriticalError = $true
+        return $null
+    }
+}
+
 function Create-ADOUs {
     param([string]$Domain)
-    
+
     Write-Log "Creating Active Directory OUs..."
-    
-    $dc = ($Domain -split '\.') | ForEach-Object { "DC=$_" }
-    $baseDN = $dc -join ','
-    
-    $ouNames = @("Users", "Groups", "Workstations", "Servers", "Service Accounts")
-    
-    foreach ($ou in $ouNames) {
-        $ouDN = "OU=$ou,$baseDN"
+
+    # Get the actual domain DN from AD instead of constructing it
+    try {
+        $domainObj = Get-ADDomain -ErrorAction Stop
+        $baseDN = $domainObj.DistinguishedName
+        Write-Log "Domain DN: $baseDN"
+    } catch {
+        Write-Log "CRITICAL: Cannot get domain information: $($_.Exception.Message)"
+        $script:HadCriticalError = $true
+        return $null
+    }
+
+    # Try a much simpler approach first - create OUs directly under domain root
+    Write-Log "Attempting to create Lab OU structure directly under domain root..."
+
+    # Create Lab root OU directly under domain
+    $labDN = "OU=Lab,$baseDN"
+    try {
+        Write-Log "Creating Lab OU: $labDN"
+        if (-not (Get-ADOrganizationalUnit -Identity $labDN -ErrorAction SilentlyContinue)) {
+            New-ADOrganizationalUnit -Name "Lab" -Path $baseDN -ErrorAction Stop
+            Write-Log "Successfully created Lab OU under domain root"
+        } else {
+            Write-Log "Lab OU already exists under domain root"
+        }
+    } catch {
+        Write-Log "Failed to create Lab OU under domain root: $($_.Exception.Message)"
+        Write-Log "This suggests the domain is not ready for OU creation yet."
+        Write-Log "The domain controller may still be initializing after promotion."
+        $script:HadCriticalError = $true
+        return $null
+    }
+
+    # Now try to create the _Madison branch under the Lab OU instead
+    Write-Log "Creating _Madison branch under Lab OU..."
+    $madisonDN = "OU=_Madison,$labDN"
+    try {
+        Write-Log "Creating _Madison OU: $madisonDN"
+        New-ADOrganizationalUnit -Name "_Madison" -Path $labDN -ErrorAction Stop
+        Write-Log "Successfully created _Madison OU"
+    } catch {
+        Write-Log "Failed to create _Madison OU: $($_.Exception.Message)"
+        Write-Log "Will continue without _Madison branch - creating OUs directly under Lab"
+        $madisonDN = $labDN  # Fall back to using Lab as the root
+    }
+
+    # Create child OUs under the Madison DN (or Lab if Madison failed)
+    $childOUs = @("Lab-Users", "Groups", "Workstations", "Servers", "Service Accounts")
+    foreach ($ou in $childOUs) {
+        $childOUDN = "OU=$ou,$madisonDN"
         try {
-            if (-not (Get-ADOrganizationalUnit -Filter "Name -eq '$ou'" -SearchBase $baseDN -ErrorAction SilentlyContinue)) {
-                New-ADOrganizationalUnit -Name $ou -Path $baseDN -ErrorAction Stop
-                Write-Log "Created OU: $ou"
+            Write-Log "Creating OU: $childOUDN"
+            if (-not (Get-ADOrganizationalUnit -Identity $childOUDN -ErrorAction SilentlyContinue)) {
+                New-ADOrganizationalUnit -Name $ou -Path $madisonDN -ErrorAction Stop
+                Write-Log "Successfully created $ou OU"
             } else {
-                Write-Log "OU already exists: $ou"
+                Write-Log "$ou OU already exists"
             }
         } catch {
-            Write-Log "ERROR creating OU $ou : $($_.Exception.Message)"
+            Write-Log "Failed to create $ou OU: $($_.Exception.Message)"
+            # Don't fail completely for child OU creation - continue
         }
     }
+
+    # Verify Lab-Users OU exists (this is critical for user creation)
+    $labUsersPath = if ($madisonDN -eq $labDN) { "OU=Lab-Users,$labDN" } else { "OU=Lab-Users,$madisonDN" }
+    if (-not (Get-ADOrganizationalUnit -Identity $labUsersPath -ErrorAction SilentlyContinue)) {
+        Write-Log "CRITICAL: Lab-Users OU was not created successfully - cannot create users"
+        $script:HadCriticalError = $true
+        return $null
+    }
+
+    Write-Log "OU structure created successfully"
+    Write-Log "Lab-Users path: $labUsersPath"
+    return $madisonDN
 }
 
 function Generate-TestPassword {
@@ -109,14 +190,13 @@ function Create-TestUsers {
     param(
         [string]$Domain,
         [int]$Count,
-        [string]$CSVPath
+        [string]$CSVPath,
+        [string]$LabRootDN
     )
-    
+
     Write-Log "Creating $Count test users in Active Directory..."
-    
-    $dc = ($Domain -split '\.') | ForEach-Object { "DC=$_" }
-    $baseDN = $dc -join ','
-    $userOUDN = "OU=Users,$baseDN"
+
+    $userOUDN = "OU=Lab-Users,$LabRootDN"
     
     # Predefined names for reproducibility
     $firstNames = @("John", "Jane", "Michael", "Sarah", "David", "Emily", "Robert", "Jessica", "James", "Ashley",
@@ -133,25 +213,26 @@ function Create-TestUsers {
     } catch {
         Write-Log "First run - no existing users found"
     }
-    
+
     $createdUsers = @()
+    $userCreationErrors = 0
     $userIndex = 0
-    
+
     for ($i = 0; $i -lt $Count -and $userIndex -lt $firstNames.Count; $i++) {
         $firstName = $firstNames[$userIndex]
         $lastName = $lastNames[$userIndex]
         $samAccount = "$($firstName.Substring(0,1).ToLower())$($lastName.ToLower())$(Get-Random -Minimum 10 -Maximum 99)"
-        
+
         if ($samAccount -in $existingUsers) {
             Write-Log "User already exists: $samAccount (skipping)"
             $userIndex++
             continue
         }
-        
+
         try {
             $password = Generate-TestPassword
             $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-            
+
             New-ADUser -SamAccountName $samAccount `
                 -UserPrincipalName "$samAccount@$Domain" `
                 -Name "$firstName $lastName" `
@@ -162,7 +243,7 @@ function Create-TestUsers {
                 -PasswordNeverExpires $true `
                 -Enabled $true `
                 -ErrorAction Stop
-            
+
             Write-Log "Created user: $samAccount"
             $createdUsers += @([PSCustomObject]@{
                 Username = $samAccount
@@ -172,9 +253,16 @@ function Create-TestUsers {
             })
         } catch {
             Write-Log "ERROR creating user $samAccount : $($_.Exception.Message)"
+            $userCreationErrors++
         }
-        
+
         $userIndex++
+    }
+
+    # Check for critical error: 0 users created AND there were creation errors
+    if ($createdUsers.Count -eq 0 -and $userCreationErrors -gt 0) {
+        Write-Log "CRITICAL: Failed to create any users and encountered creation errors"
+        $script:HadCriticalError = $true
     }
     
     # Export to CSV (append mode, but with headers if new file)
@@ -204,58 +292,93 @@ function Configure-DHCP {
         [string]$ScopeEnd,
         [string]$Domain
     )
-    
+
     Write-Log "Configuring DHCP Server..."
-    
+
     try {
-        # Add DHCP server to domain
-        Write-Log "Adding DHCP server to Active Directory..."
-        Add-DhcpServerInDC -Confirm:$false -ErrorAction SilentlyContinue
-        
+        # Install DHCP role and management tools
+        Write-Log "Installing DHCP Server role and management tools..."
+        Install-WindowsFeature -Name DHCP -IncludeManagementTools -ErrorAction Stop | Out-Null
+        Write-Log "DHCP role installed successfully"
+
+        # Import DHCP module
+        Write-Log "Importing DhcpServer module..."
+        Import-Module DhcpServer -ErrorAction Stop
+        Write-Log "DhcpServer module imported successfully"
+
+        # Get server IP address for authorization (exclude APIPA/link-local)
+        $serverIP = Get-NetIPAddress -AddressFamily IPv4 |
+            Where-Object {
+                $_.IPAddress -notlike "169.254.*" -and
+                $_.IPAddress -notlike "127.*" -and
+                $_.InterfaceAlias -notlike "*Loopback*"
+            } |
+            Select-Object -First 1 -ExpandProperty IPAddress
+
+        if (-not $serverIP) {
+            throw "Could not determine server IP address for DHCP authorization"
+        }
+
+        Write-Log "Using server IP for DHCP authorization: $serverIP"
+
+        # Authorize DHCP server in AD
+        Write-Log "Authorizing DHCP server in Active Directory..."
+        $serverFQDN = "$env:COMPUTERNAME.$Domain"
+        Add-DhcpServerInDC -DnsName $serverFQDN -IPAddress $serverIP -ErrorAction Stop
+        Write-Log "DHCP server authorized in Active Directory"
+
         # Wait a moment for DHCP service to be ready
         Start-Sleep -Seconds 5
-        
-        # Create DHCP scope
-        $scopeStart = $ScopeStart
-        $scopeEnd = $ScopeEnd
-        $scopeNetwork = "10.0.1.0"
-        $scopeMask = "255.255.255.0"
+
+        # Create DHCP scope if it doesn't exist
+        $scopeId = [ipaddress]"10.0.1.0"
         $scopeName = "Lab-Subnet-10.0.1.0"
-        
-        Write-Log "Creating DHCP scope: $scopeName ($scopeNetwork/$scopeMask) with range $scopeStart - $scopeEnd"
-        
-        try {
+
+        Write-Log "Checking for existing DHCP scope: $scopeId"
+        $existingScope = Get-DhcpServerv4Scope -ScopeId $scopeId -ErrorAction SilentlyContinue
+
+        if ($existingScope) {
+            Write-Log "DHCP scope already exists: $scopeId"
+        } else {
+            Write-Log "Creating DHCP scope: $scopeName ($scopeId) with range $ScopeStart - $ScopeEnd"
             Add-DhcpServerv4Scope `
                 -Name $scopeName `
-                -StartRange $scopeStart `
-                -EndRange $scopeEnd `
-                -SubnetMask $scopeMask `
+                -StartRange $ScopeStart `
+                -EndRange $ScopeEnd `
+                -SubnetMask "255.255.255.0" `
                 -State Active `
-                -Confirm:$false `
-                -ErrorAction Stop
+                -ErrorAction Stop | Out-Null
             Write-Log "DHCP scope created successfully"
-        } catch {
-            Write-Log "DHCP scope may already exist: $($_.Exception.Message)"
         }
-        
+
         # Configure DHCP options
-        Write-Log "Configuring DHCP options..."
-        Set-DhcpServerv4OptionValue -ScopeId $scopeNetwork `
-            -DnsServer "10.0.1.10" `
-            -Router "10.0.1.1" `
-            -DnsDomain $Domain `
-            -Confirm:$false -ErrorAction SilentlyContinue
-        
+        Write-Log "Configuring DHCP scope options..."
+        Set-DhcpServerv4OptionValue -ScopeId $scopeId `
+            -OptionId 003 `  # Router
+            -Value "10.0.1.1" `
+            -ErrorAction Stop | Out-Null
+
+        Set-DhcpServerv4OptionValue -ScopeId $scopeId `
+            -OptionId 006 `  # DNS Servers
+            -Value "10.0.1.10" `
+            -ErrorAction Stop | Out-Null
+
+        Set-DhcpServerv4OptionValue -ScopeId $scopeId `
+            -OptionId 015 `  # DNS Domain Name
+            -Value $Domain `
+            -ErrorAction Stop | Out-Null
+
         Write-Log "DHCP configuration completed"
         Write-Log "  - Scope: $scopeName"
-        Write-Log "  - Network: $scopeNetwork/$scopeMask"
-        Write-Log "  - Range: $scopeStart - $scopeEnd"
+        Write-Log "  - Network: 10.0.1.0/24"
+        Write-Log "  - Range: $ScopeStart - $ScopeEnd"
         Write-Log "  - Gateway: 10.0.1.1"
         Write-Log "  - DNS: 10.0.1.10"
         Write-Log "  - Domain: $Domain"
-        
+
     } catch {
         Write-Log "ERROR configuring DHCP: $($_.Exception.Message)"
+        $script:HadCriticalError = $true
     }
 }
 
@@ -267,22 +390,55 @@ try {
     # Wait for AD to be ready
     if (-not (Wait-ForActiveDirectory)) {
         Write-Log "CRITICAL: AD services did not become ready. Aborting Stage 2."
+        Write-Log "Press any key to exit..."
+        try {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        } catch {
+            Start-Sleep -Seconds 10
+        }
         exit 1
     }
-    
-    # Create OUs
-    Create-ADOUs -Domain $DomainName
-    
+
+    # Additional wait to ensure domain is fully initialized
+    Write-Log "Waiting additional 10 seconds for domain initialization..."
+    Start-Sleep -Seconds 10
+
+    # Create OUs and get Lab root DN
+    $labRootDN = Create-ADOUs -Domain $DomainName
+    if (-not $labRootDN) {
+        Write-Log "CRITICAL: Failed to create OU structure. Aborting Stage 2."
+        Write-Log "Press any key to exit..."
+        try {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        } catch {
+            Start-Sleep -Seconds 10
+        }
+        exit 1
+    }
+
     # Create test users
-    Create-TestUsers -Domain $DomainName -Count $NumberOfUsers -CSVPath $usersCSV
-    
+    Create-TestUsers -Domain $DomainName -Count $NumberOfUsers -CSVPath $usersCSV -LabRootDN $labRootDN
+
     # Configure DHCP
     Configure-DHCP -ScopeStart $DHCPScopeStart -ScopeEnd $DHCPScopeEnd -Domain $DomainName
-    
+
+    # Check for critical errors
+    if ($script:HadCriticalError) {
+        Write-Log "CRITICAL: Stage 2 encountered critical errors. Lab setup incomplete."
+        Write-Log "Check the log file for details: $logFile"
+        Write-Log "Press any key to exit..."
+        try {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        } catch {
+            Start-Sleep -Seconds 10
+        }
+        exit 1
+    }
+
     Write-Log "=== Stage 2 Completed Successfully ==="
     Write-Log "Lab is ready!"
     Write-Log "Users CSV: $usersCSV"
-    
+
     # Remove scheduled task after successful completion
     $taskName = "LabBootstrap-Stage2"
     $taskPath = "\LabBootstrap"
@@ -294,5 +450,11 @@ try {
 } catch {
     Write-Log "ERROR: $($_.Exception.Message)"
     Write-Log "Stack trace: $($_.ScriptStackTrace)"
+    Write-Log "Press any key to exit..."
+    try {
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    } catch {
+        Start-Sleep -Seconds 10
+    }
     exit 1
 }
