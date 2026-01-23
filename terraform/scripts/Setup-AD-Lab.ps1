@@ -14,7 +14,7 @@
 param(
     [Parameter(Mandatory = $false)]
     [ValidateLength(8, 128)]
-    [string]$DSRMPassword = "P@ssw0rd2026!DSRM"
+    [string]$DSRMPassword = "tempadmin123!@#"
 )
 
 # ============================================================================
@@ -363,6 +363,37 @@ function Export-UserCredentials {
 }
 
 # ============================================================================
+# BRANCH OU CREATION
+# ============================================================================
+
+function Invoke-BranchOUCreation {
+    <#
+    .SYNOPSIS
+        Creates branch OU structure (Branches -> TOKYO, NEW YORK, AMSTERDAM).
+    #>
+    Write-Log "Creating branch OU structure..."
+
+    try {
+        # Get the path to this script's directory
+        $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+        $adcreationScript = Join-Path $scriptDir "adcreation.ps1"
+
+        # Check if adcreation.ps1 exists in the same directory
+        if (Test-Path $adcreationScript) {
+            Write-Log "Found adcreation.ps1 script, executing..."
+            & powershell.exe -ExecutionPolicy Bypass -File $adcreationScript
+            Write-Log "Branch OU creation completed"
+        } else {
+            Write-Log "adcreation.ps1 not found at: $adcreationScript" -Level "WARN"
+            Write-Log "Skipping branch OU creation. You can run it manually later." -Level "WARN"
+        }
+    } catch {
+        Write-Log "ERROR running branch OU creation: $($_.Exception.Message)" -Level "ERROR"
+        Write-Log "Branch OU creation failed, but continuing with setup..." -Level "WARN"
+    }
+}
+
+# ============================================================================
 # DHCP CONFIGURATION
 # ============================================================================
 
@@ -514,6 +545,7 @@ function Invoke-LabSetup {
 
         # ===== PHASE 2: Active Directory Configuration =====
         New-ADOUStructure
+        Invoke-BranchOUCreation
         $createdUsers = New-TestUsers
         Export-UserCredentials -Users $createdUsers
 

@@ -100,6 +100,45 @@ resource "azurerm_windows_virtual_machine" "dc" {
 }
 
 # =========================
+# DC01 Custom Script Extension
+# =========================
+# This extension downloads and runs PowerShell scripts from URLs
+# The setup script handles DC promotion and schedules the configure script after reboot
+# If setup_script_url is empty, the extension will not execute any scripts
+resource "azurerm_virtual_machine_extension" "dc_custom_script" {
+  name                 = "dc01-custom-script"
+  virtual_machine_id   = azurerm_windows_virtual_machine.dc.id
+  publisher            = "Microsoft.Compute"
+  type                 = "CustomScriptExtension"
+  type_handler_version = "1.10"
+
+  settings = jsonencode({
+    fileUris = var.setup_script_url != "" ? compact([
+      var.setup_script_url,
+      var.configure_script_url != "" ? var.configure_script_url : "",
+      var.adcreation_script_url != "" ? var.adcreation_script_url : ""
+    ]) : []
+  })
+
+  protected_settings = jsonencode({
+    commandToExecute = var.setup_script_url != "" ? "powershell.exe -ExecutionPolicy Bypass -NoProfile -Command \"$ErrorActionPreference='Stop'; $scriptName='${basename(var.setup_script_url)}'; Write-Host 'Downloaded script: $scriptName'; if (Test-Path $scriptName) { Write-Host 'Executing script: $scriptName'; & .\\$scriptName -DSRMPassword '${replace(var.dsrm_password, "'", "''")}' } else { Write-Error 'Script file not found: $scriptName'; exit 1 }\""
+      : "powershell.exe -ExecutionPolicy Bypass -Command \"Write-Host 'No setup script URL configured. Skipping automated setup.'\""
+  })
+
+  # Wait for VM to be ready before running script
+  depends_on = [
+    azurerm_windows_virtual_machine.dc
+  ]
+
+  lifecycle {
+    ignore_changes = [
+      settings,
+      protected_settings
+    ]
+  }
+}
+
+# =========================
 # SRV01 Public IP
 # =========================
 resource "azurerm_public_ip" "srv_pip" {

@@ -11,7 +11,7 @@
 
 param(
     [string]$DomainName = "lab.local",
-    [string]$DSRMPassword = "P@ssw0rd123!",
+    [string]$DSRMPassword = "tempadmin123!@#",
     [string]$AdminUsername = "Administrator",
     [string]$AdminPassword = "P@ssw0rd123!"
 )

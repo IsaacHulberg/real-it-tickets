@@ -15,7 +15,7 @@ admin_password = "ChangeMe!P@ssw0rd123"
 
 # Directory Services Restore Mode password for Domain Controller
 # (must be strong: min 12 chars, uppercase, lowercase, number, special char)
-dsrm_password = "ChangeMe!Dsrm@Pass123"
+dsrm_password = "tempadmin123!@#"
 
 # Active Directory domain name
 domain_name = "lab.local"
@@ -31,3 +31,19 @@ dhcp_scope_end = "10.0.1.200"
 
 # Number of test users to create (max 30 due to built-in name set)
 number_of_test_users = 30
+
+# PowerShell script URLs (optional - leave empty to skip automated setup)
+# These scripts will be downloaded and executed on the DC01 VM
+# Example GitHub raw URLs:
+# setup_script_url = "https://raw.githubusercontent.com/yourusername/yourrepo/main/scripts/Setup-AD-Lab.ps1"
+# configure_script_url = "https://raw.githubusercontent.com/yourusername/yourrepo/main/scripts/02-configure-lab.ps1"
+# 
+# Or use Azure Storage blob URLs:
+# setup_script_url = "https://yourstorageaccount.blob.core.windows.net/scripts/Setup-AD-Lab.ps1"
+# configure_script_url = "https://yourstorageaccount.blob.core.windows.net/scripts/02-configure-lab.ps1"
+# adcreation_script_url = "https://yourstorageaccount.blob.core.windows.net/scripts/adcreation.ps1"
+#
+# Note: If adcreation_script_url is empty, Setup-AD-Lab.ps1 will look for adcreation.ps1 in the same directory
+setup_script_url = ""
+configure_script_url = ""
+adcreation_script_url = ""
