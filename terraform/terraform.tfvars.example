@@ -1,0 +1,33 @@
+# Example Terraform Variables for AD Lab
+# Copy this file to terraform.tfvars and update with your values
+
+# Azure Location
+location = "eastus"
+
+# Azure Resource Group Name
+resource_group_name = "rg-ad-lab"
+
+# VM admin username (will be local admin on all VMs)
+admin_username = "azureuser"
+
+# VM admin password (must be strong: min 12 chars, uppercase, lowercase, number, special char)
+admin_password = "ChangeMe!P@ssw0rd123"
+
+# Directory Services Restore Mode password for Domain Controller
+# (must be strong: min 12 chars, uppercase, lowercase, number, special char)
+dsrm_password = "ChangeMe!Dsrm@Pass123"
+
+# Active Directory domain name
+domain_name = "lab.local"
+
+# VM size (Standard_B2ms is suitable for lab, use Standard_B4ms for larger workloads)
+vm_size = "Standard_B2ms"
+
+# DHCP scope start address
+dhcp_scope_start = "10.0.1.100"
+
+# DHCP scope end address
+dhcp_scope_end = "10.0.1.200"
+
+# Number of test users to create (max 30 due to built-in name set)
+number_of_test_users = 30

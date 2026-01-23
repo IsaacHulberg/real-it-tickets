@@ -1,0 +1,117 @@
+---
+# Domain configuration
+ad_domain_name: lab.local
+ad_netbios: LAB
+
+# DSRM password - change this to something secure
+ad_dsrm_password: "P@ssw0rd1234!"
+
+# OU configuration
+ad_ous:
+  - name: Users
+    path: "DC=lab,DC=local"
+  - name: Computers
+    path: "DC=lab,DC=local"
+  - name: Groups
+    path: "DC=lab,DC=local"
+  - name: ServiceAccounts
+    path: "DC=lab,DC=local"
+  - name: TestUsers
+    path: "DC=lab,DC=local"
+
+# Test users to create (30 total)
+test_users:
+  - username: james.anderson
+    first_name: James
+    last_name: Anderson
+  - username: sarah.bennett
+    first_name: Sarah
+    last_name: Bennett
+  - username: michael.carter
+    first_name: Michael
+    last_name: Carter
+  - username: lisa.davies
+    first_name: Lisa
+    last_name: Davies
+  - username: david.evans
+    first_name: David
+    last_name: Evans
+  - username: emily.fisher
+    first_name: Emily
+    last_name: Fisher
+  - username: robert.garcia
+    first_name: Robert
+    last_name: Garcia
+  - username: jessica.harris
+    first_name: Jessica
+    last_name: Harris
+  - username: christopher.ivan
+    first_name: Christopher
+    last_name: Ivan
+  - username: amanda.jones
+    first_name: Amanda
+    last_name: Jones
+  - username: daniel.kelly
+    first_name: Daniel
+    last_name: Kelly
+  - username: stephanie.lewis
+    first_name: Stephanie
+    last_name: Lewis
+  - username: matthew.miller
+    first_name: Matthew
+    last_name: Miller
+  - username: michelle.nelson
+    first_name: Michelle
+    last_name: Nelson
+  - username: andrew.oconnor
+    first_name: Andrew
+    last_name: O'Connor
+  - username: taylor.parker
+    first_name: Taylor
+    last_name: Parker
+  - username: ryan.quinn
+    first_name: Ryan
+    last_name: Quinn
+  - username: victoria.robinson
+    first_name: Victoria
+    last_name: Robinson
+  - username: jonathan.smith
+    first_name: Jonathan
+    last_name: Smith
+  - username: rachel.thomas
+    first_name: Rachel
+    last_name: Thomas
+  - username: kevin.underwood
+    first_name: Kevin
+    last_name: Underwood
+  - username: natalie.vazquez
+    first_name: Natalie
+    last_name: Vazquez
+  - username: brandon.white
+    first_name: Brandon
+    last_name: White
+  - username: kayla.xavier
+    first_name: Kayla
+    last_name: Xavier
+  - username: jason.young
+    first_name: Jason
+    last_name: Young
+  - username: amber.zimmerman
+    first_name: Amber
+    last_name: Zimmerman
+  - username: william.ashley
+    first_name: William
+    last_name: Ashley
+  - username: sophia.bradley
+    first_name: Sophia
+    last_name: Bradley
+  - username: alexander.cooper
+    first_name: Alexander
+    last_name: Cooper
+  - username: olivia.diaz
+    first_name: Olivia
+    last_name: Diaz
+
+# Password generation
+password_length: 14
+password_special_chars: true
