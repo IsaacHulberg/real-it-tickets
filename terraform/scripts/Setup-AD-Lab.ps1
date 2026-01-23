@@ -124,7 +124,7 @@ function Invoke-DCPromotion {
     try {
         # Install AD DS and DNS roles
         Write-Log "Installing AD-Domain-Services and DNS roles..."
-        Install-WindowsFeature -Name AD-Domain-Services, DNS -IncludeManagementTools -NoRestart | Out-Null
+        Install-WindowsFeature -Name AD-Domain-Services, DNS -IncludeManagementTools | Out-Null
         Write-Log "Roles installed successfully"
 
         # Prepare DSRM password as secure string
@@ -136,8 +136,7 @@ function Invoke-DCPromotion {
             -DomainName $DomainName `
             -DomainNetBIOSName $NetBIOSName `
             -SafeModeAdministratorPassword $dsrmSecure `
-            -Force `
-            -NoRestart | Out-Null
+            -Force | Out-Null
 
         Write-Log "DC promotion completed. Server requires restart."
         
@@ -411,7 +410,7 @@ function Install-DHCPServer {
     }
     else {
         Write-Log "Installing DHCP Server role..."
-        Install-WindowsFeature -Name DHCP -IncludeManagementTools -NoRestart | Out-Null
+        Install-WindowsFeature -Name DHCP -IncludeManagementTools | Out-Null
         Write-Log "DHCP Server role installed"
     }
 }

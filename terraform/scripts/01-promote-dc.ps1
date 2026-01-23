@@ -58,7 +58,7 @@ try {
 
     # Install required Windows Features
     Write-Log "Installing AD DS, DNS, and DHCP features..."
-    Install-WindowsFeature -Name AD-Domain-Services, DNS, DHCP -IncludeManagementTools -NoRestart | Out-Null
+    Install-WindowsFeature -Name AD-Domain-Services, DNS, DHCP -IncludeManagementTools | Out-Null
     Write-Log "Features installed successfully."
 
     # Create DSRM secure password
@@ -69,8 +69,7 @@ try {
     Install-ADDSForest `
         -DomainName $DomainName `
         -SafeModeAdministratorPassword $dsrmSecure `
-        -Force `
-        -NoRestart
+        -Force
 
     Write-Log "DC promotion completed. Server will reboot in 60 seconds."
     Write-Log "After reboot, Stage 2 will run automatically via Scheduled Task."
