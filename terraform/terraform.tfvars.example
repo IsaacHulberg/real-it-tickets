@@ -8,14 +8,14 @@ location = "eastus"
 resource_group_name = "rg-ad-lab"
 
 # VM admin username (will be local admin on all VMs)
-admin_username = "azureuser"
+admin_username = "tempadmin"
 
 # VM admin password (must be strong: min 12 chars, uppercase, lowercase, number, special char)
-admin_password = "ChangeMe!P@ssw0rd123"
+admin_password = "tempadmin123!@#"
 
 # Directory Services Restore Mode password for Domain Controller
 # (must be strong: min 12 chars, uppercase, lowercase, number, special char)
-dsrm_password = "ChangeMe!Dsrm@Pass123"
+dsrm_password = "tempadmin123!@#"
 
 # Active Directory domain name
 domain_name = "lab.local"
@@ -31,3 +31,11 @@ dhcp_scope_end = "10.0.1.200"
 
 # Number of test users to create (max 30 due to built-in name set)
 number_of_test_users = 30
+
+# PowerShell script URLs - configured to pull from your GitHub repository
+# These scripts will be downloaded and executed on the DC01 VM
+# Repository: https://github.com/IsaacHulberg/File-pull-testing/tree/main
+# Note: Must use raw.githubusercontent.com URLs for Azure CSE to download the actual file content
+setup_script_url = "https://raw.githubusercontent.com/IsaacHulberg/File-pull-testing/main/Setup-AD-Lab.ps1"
+configure_script_url = "https://raw.githubusercontent.com/IsaacHulberg/File-pull-testing/main/02-configure-lab.ps1"
+adcreation_script_url = "https://raw.githubusercontent.com/IsaacHulberg/File-pull-testing/main/adcreation.ps1"

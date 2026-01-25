@@ -27,3 +27,13 @@ output "rdp_allowed_cidr" {
   value       = local.my_public_ip_cidr
   description = "Public IP (as /32) automatically allowed to RDP in via NSG."
 }
+
+output "setup_script_url" {
+  value       = var.setup_script_url != "" ? var.setup_script_url : "Not configured"
+  description = "URL of the setup PowerShell script being used"
+}
+
+output "configure_script_url" {
+  value       = var.configure_script_url != "" ? var.configure_script_url : "Not configured"
+  description = "URL of the post-DC-promotion configuration script being used"
+}
