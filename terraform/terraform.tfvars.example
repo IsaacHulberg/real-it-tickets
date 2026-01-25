@@ -34,7 +34,8 @@ number_of_test_users = 30
 
 # PowerShell script URLs - configured to pull from your GitHub repository
 # These scripts will be downloaded and executed on the DC01 VM
-# GitHub raw URLs from: https://github.com/IsaacHulberg/real-it-tickets/tree/Scripts/terraform/scripts
-setup_script_url = "https://raw.githubusercontent.com/IsaacHulberg/real-it-tickets/Scripts/terraform/scripts/Setup-AD-Lab.ps1"
-configure_script_url = "https://raw.githubusercontent.com/IsaacHulberg/real-it-tickets/Scripts/terraform/scripts/02-configure-lab.ps1"
-adcreation_script_url = "https://raw.githubusercontent.com/IsaacHulberg/real-it-tickets/Scripts/terraform/scripts/adcreation.ps1"
+# Repository: https://github.com/IsaacHulberg/File-pull-testing/tree/main
+# Note: Must use raw.githubusercontent.com URLs for Azure CSE to download the actual file content
+setup_script_url = "https://raw.githubusercontent.com/IsaacHulberg/File-pull-testing/main/Setup-AD-Lab.ps1"
+configure_script_url = "https://raw.githubusercontent.com/IsaacHulberg/File-pull-testing/main/02-configure-lab.ps1"
+adcreation_script_url = "https://raw.githubusercontent.com/IsaacHulberg/File-pull-testing/main/adcreation.ps1"
