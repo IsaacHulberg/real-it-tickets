@@ -36,7 +36,7 @@ $DomainDN = "DC=lab,DC=local"
 # ============================================================================
 
 Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 $ProgressPreference = "SilentlyContinue"
 
 # Create log directory if it doesn't exist
@@ -139,47 +139,15 @@ function Invoke-DCPromotion {
             -Force | Out-Null
 
         Write-Log "DC promotion completed. Server requires restart."
-        
-        # Schedule script to resume after reboot via Task Scheduler
-        Invoke-ScheduleResumeOnReboot
-        
+
         Write-Log "Initiating restart..."
         Restart-Computer -Force
     }
     catch {
         Write-Log "ERROR during DC promotion: $($_.Exception.Message)" -Level "ERROR"
         Write-Log "Full error: $($_.ScriptStackTrace)" -Level "ERROR"
-        throw
+        return
     }
-}
-
-function Invoke-ScheduleResumeOnReboot {
-    <#
-    .SYNOPSIS
-        Creates a scheduled task to resume the script after reboot.
-    #>
-    Write-Log "Scheduling script to resume after reboot..."
-
-    $taskName = "Setup-AD-Lab-Resume"
-    $scriptPath = $MyInvocation.MyCommand.Path
-    $taskAction = New-ScheduledTaskAction -Execute "powershell.exe" `
-        -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
-
-    $taskTrigger = New-ScheduledTaskTrigger -AtLogOn -User "SYSTEM"
-    $taskSettings = New-ScheduledTaskSettingSet -StartWhenAvailable -DontStopIfGoingOnBattery -DontStopOnIdleEnd
-
-    # Remove old task if exists
-    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue | Out-Null
-
-    # Register new task
-    Register-ScheduledTask -TaskName $taskName `
-        -Action $taskAction `
-        -Trigger $taskTrigger `
-        -Settings $taskSettings `
-        -Principal (New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest) `
-        -Force | Out-Null
-
-    Write-Log "Scheduled task '$taskName' created and will run after reboot"
 }
 
 # ============================================================================
@@ -508,7 +476,7 @@ function New-DHCPScope {
     }
     catch {
         Write-Log "ERROR configuring DHCP scope: $($_.Exception.Message)" -Level "ERROR"
-        throw
+        return
     }
 }
 
@@ -529,7 +497,7 @@ function Invoke-LabSetup {
     # Check if already done
     if (Test-DoneFileExists) {
         Write-Log "Setup already completed. Exiting gracefully."
-        exit 0
+        return
     }
 
     try {
@@ -566,16 +534,11 @@ function Invoke-LabSetup {
 
         New-DoneFile
 
-        # Unregister the scheduled task now that setup is complete
-        $taskName = "Setup-AD-Lab-Resume"
-        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue | Out-Null
-        Write-Log "Cleanup: Removed scheduled task '$taskName'"
-
     }
     catch {
         Write-Log "FATAL ERROR: $($_.Exception.Message)" -Level "ERROR"
         Write-Log "Stack trace: $($_.ScriptStackTrace)" -Level "ERROR"
-        exit 1
+        return
     }
 }
 

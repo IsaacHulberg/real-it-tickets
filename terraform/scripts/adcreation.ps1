@@ -10,7 +10,7 @@ OU=Branches
     OU=Users, OU=Computers, OU=Groups, plus optional extra sub-OUs
 #>
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 Import-Module ActiveDirectory
 

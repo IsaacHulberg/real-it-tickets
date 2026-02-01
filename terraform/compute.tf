@@ -116,12 +116,14 @@ resource "azurerm_virtual_machine_extension" "dc_custom_script" {
     fileUris = var.setup_script_url != "" ? compact([
       var.setup_script_url,
       var.configure_script_url != "" ? var.configure_script_url : "",
-      var.adcreation_script_url != "" ? var.adcreation_script_url : ""
+      var.adcreation_script_url != "" ? var.adcreation_script_url : "",
+      var.stage1_script_url != "" ? var.stage1_script_url : "",
+      var.stage2_script_url != "" ? var.stage2_script_url : ""
     ]) : []
   })
 
   protected_settings = jsonencode({
-    commandToExecute = var.setup_script_url != "" ? "powershell.exe -ExecutionPolicy Bypass -NoProfile -Command \"$ErrorActionPreference='Stop'; $scriptName='${basename(var.setup_script_url)}'; Write-Host 'Downloaded script: $scriptName'; if (Test-Path $scriptName) { Write-Host 'Executing script: $scriptName'; & .\\$scriptName -DSRMPassword '${replace(var.dsrm_password, "'", "''")}' } else { Write-Error 'Script file not found: $scriptName'; exit 1 }\"" : "powershell.exe -ExecutionPolicy Bypass -Command \"Write-Host 'No setup script URL configured. Skipping automated setup.'\""
+    commandToExecute = var.setup_script_url != "" ? "powershell.exe -ExecutionPolicy Bypass -NoProfile -Command \"$ErrorActionPreference='Stop'; if ('${replace(var.stage1_script_url, "'", "''")}' -ne '') { $stage1='${basename(var.stage1_script_url)}'; if (Test-Path $stage1) { & .\\$stage1 -Stage2Url '${replace(var.stage2_script_url, "'", "''")}' } else { Write-Error 'Stage1 script file not found: ' + $stage1; exit 1 } } else { Write-Host 'No stage1 script URL configured. Skipping Stage1 bootstrap.' }; $scriptName='${basename(var.setup_script_url)}'; Write-Host 'Downloaded script: $scriptName'; if (Test-Path $scriptName) { Write-Host 'Executing script: $scriptName'; & .\\$scriptName -DSRMPassword '${replace(var.dsrm_password, "'", "''")}' } else { Write-Error 'Script file not found: $scriptName'; exit 1 }\"" : "powershell.exe -ExecutionPolicy Bypass -Command \"Write-Host 'No setup script URL configured. Skipping automated setup.'\""
   })
 
   # Wait for VM to be ready before running script

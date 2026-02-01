@@ -39,6 +39,18 @@ variable "adcreation_script_url" {
   default     = ""
 }
 
+variable "stage1_script_url" {
+  type        = string
+  description = "URL to download Stage1 bootstrap script (stage1-bootstrap.ps1)."
+  default     = ""
+}
+
+variable "stage2_script_url" {
+  type        = string
+  description = "URL to download Stage2 mock user script (stage2-create-mockusers.ps1)."
+  default     = ""
+}
+
 variable "dsrm_password" {
   type        = string
   sensitive   = true

@@ -39,3 +39,7 @@ number_of_test_users = 30
 setup_script_url = "https://raw.githubusercontent.com/IsaacHulberg/File-pull-testing/main/Setup-AD-Lab.ps1"
 configure_script_url = "https://raw.githubusercontent.com/IsaacHulberg/File-pull-testing/main/02-configure-lab.ps1"
 adcreation_script_url = "https://raw.githubusercontent.com/IsaacHulberg/File-pull-testing/main/adcreation.ps1"
+
+# Stage1/Stage2 bootstrap scripts for post-promotion actions
+stage1_script_url = "https://raw.githubusercontent.com/your-org/your-repo/main/scripts/stage1-bootstrap.ps1"
+stage2_script_url = "https://raw.githubusercontent.com/your-org/your-repo/main/scripts/stage2-create-mockusers.ps1"

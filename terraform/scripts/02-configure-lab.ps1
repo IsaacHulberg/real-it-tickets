@@ -18,7 +18,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 # Setup logging and directories
 $logDir = "C:\LabBootstrap\logs"
@@ -316,7 +316,9 @@ function Configure-DHCP {
             Select-Object -First 1 -ExpandProperty IPAddress
 
         if (-not $serverIP) {
-            throw "Could not determine server IP address for DHCP authorization"
+            Write-Log "ERROR: Could not determine server IP address for DHCP authorization"
+            $script:HadCriticalError = $true
+            return
         }
 
         Write-Log "Using server IP for DHCP authorization: $serverIP"
@@ -390,13 +392,7 @@ try {
     # Wait for AD to be ready
     if (-not (Wait-ForActiveDirectory)) {
         Write-Log "CRITICAL: AD services did not become ready. Aborting Stage 2."
-        Write-Log "Press any key to exit..."
-        try {
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-        } catch {
-            Start-Sleep -Seconds 10
-        }
-        exit 1
+        return
     }
 
     # Additional wait to ensure domain is fully initialized
@@ -407,13 +403,7 @@ try {
     $labRootDN = Create-ADOUs -Domain $DomainName
     if (-not $labRootDN) {
         Write-Log "CRITICAL: Failed to create OU structure. Aborting Stage 2."
-        Write-Log "Press any key to exit..."
-        try {
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-        } catch {
-            Start-Sleep -Seconds 10
-        }
-        exit 1
+        return
     }
 
     # Create test users
@@ -426,13 +416,7 @@ try {
     if ($script:HadCriticalError) {
         Write-Log "CRITICAL: Stage 2 encountered critical errors. Lab setup incomplete."
         Write-Log "Check the log file for details: $logFile"
-        Write-Log "Press any key to exit..."
-        try {
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-        } catch {
-            Start-Sleep -Seconds 10
-        }
-        exit 1
+        return
     }
 
     Write-Log "=== Stage 2 Completed Successfully ==="
@@ -450,11 +434,5 @@ try {
 } catch {
     Write-Log "ERROR: $($_.Exception.Message)"
     Write-Log "Stack trace: $($_.ScriptStackTrace)"
-    Write-Log "Press any key to exit..."
-    try {
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-    } catch {
-        Start-Sleep -Seconds 10
-    }
-    exit 1
+    return
 }
