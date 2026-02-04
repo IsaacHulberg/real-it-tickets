@@ -14,7 +14,7 @@
 param(
     [Parameter(Mandatory = $false)]
     [ValidateLength(8, 128)]
-    [string]$DSRMPassword = "tempadmin123!@#"
+    [string]$DSRMPassword = "Temppassword123!@#"
 )
 
 # ============================================================================

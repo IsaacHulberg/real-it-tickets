@@ -43,5 +43,5 @@ variable "dsrm_password" {
   type        = string
   sensitive   = true
   description = "Directory Services Restore Mode password for domain controller"
-  default     = "tempadmin123!@#"
+  default     = "Temppassword123!@#"
 }

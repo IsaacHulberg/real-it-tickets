@@ -11,9 +11,9 @@
 
 param(
     [string]$DomainName = "lab.local",
-    [string]$DSRMPassword = "tempadmin123!@#",
-    [string]$AdminUsername = "Administrator",
-    [string]$AdminPassword = "P@ssw0rd123!"
+    [string]$DSRMPassword = "Temppassword123!@#",
+    [string]$AdminUsername = "tempadmin",
+    [string]$AdminPassword = "Temppassword123!@#"
 )
 
 Set-StrictMode -Version Latest

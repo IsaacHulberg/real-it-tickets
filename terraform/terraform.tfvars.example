@@ -11,11 +11,11 @@ resource_group_name = "rg-ad-lab"
 admin_username = "tempadmin"
 
 # VM admin password (must be strong: min 12 chars, uppercase, lowercase, number, special char)
-admin_password = "tempadmin123!@#"
+admin_password = "Temppassword123!@#"
 
 # Directory Services Restore Mode password for Domain Controller
 # (must be strong: min 12 chars, uppercase, lowercase, number, special char)
-dsrm_password = "tempadmin123!@#"
+dsrm_password = "Temppassword123!@#"
 
 # Active Directory domain name
 domain_name = "lab.local"

@@ -10,8 +10,8 @@
 
 param(
     [string]$DomainName = "lab.local",
-    [string]$AdminUsername = "Administrator",
-    [string]$AdminPassword = "P@ssw0rd123!",
+    [string]$AdminUsername = "tempadmin",
+    [string]$AdminPassword = "Temppassword123!@#",
     [string]$DHCPScopeStart = "10.0.1.100",
     [string]$DHCPScopeEnd = "10.0.1.200",
     [int]$NumberOfUsers = 30
