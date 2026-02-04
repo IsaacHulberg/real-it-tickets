@@ -113,9 +113,7 @@ function Create-ADOUs {
         }
     } catch {
         Write-Log "Failed to create Lab OU under domain root: $($_.Exception.Message)"
-        Write-Log "This suggests the domain is not ready for OU creation yet."
-        Write-Log "The domain controller may still be initializing after promotion."
-        $script:HadCriticalError = $true
+        Write-Log "Domain may still be initializing. Will retry if this is a transient error."
         return $null
     }
 
@@ -400,13 +398,28 @@ try {
     }
 
     # Additional wait to ensure domain is fully initialized
-    Write-Log "Waiting additional 10 seconds for domain initialization..."
-    Start-Sleep -Seconds 10
+    Write-Log "Waiting additional 30 seconds for domain initialization..."
+    Start-Sleep -Seconds 30
 
-    # Create OUs and get Lab root DN
-    $labRootDN = Create-ADOUs -Domain $DomainName
+    # Create OUs with retry logic (domain may still be initializing)
+    $labRootDN = $null
+    $maxOUAttempts = 5
+    for ($attempt = 1; $attempt -le $maxOUAttempts; $attempt++) {
+        Write-Log "Attempting to create OU structure (attempt $attempt/$maxOUAttempts)..."
+        $labRootDN = Create-ADOUs -Domain $DomainName
+        if ($labRootDN) {
+            Write-Log "OU structure created successfully"
+            break
+        } else {
+            if ($attempt -lt $maxOUAttempts) {
+                Write-Log "OU creation failed, waiting 15 seconds before retry..."
+                Start-Sleep -Seconds 15
+            }
+        }
+    }
+
     if (-not $labRootDN) {
-        Write-Log "CRITICAL: Failed to create OU structure. Aborting Stage 2."
+        Write-Log "CRITICAL: Failed to create OU structure after $maxOUAttempts attempts. Aborting Stage 2."
         Write-Log "Press any key to exit..."
         try {
             $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

@@ -39,6 +39,12 @@ variable "adcreation_script_url" {
   default     = ""
 }
 
+variable "domain_name" {
+  type        = string
+  description = "Active Directory domain name"
+  default     = "lab.local"
+}
+
 variable "dsrm_password" {
   type        = string
   sensitive   = true
