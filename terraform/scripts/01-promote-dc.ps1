@@ -57,14 +57,17 @@ try {
     }
 
     # Copy stage 2 scripts from CSE download directory to scripts directory
+    # $PSScriptRoot is empty when invoked via -Command, fall back to working directory
+    $cseDir = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+    Write-Log "CSE download directory: $cseDir"
     Write-Log "Copying stage 2 scripts to '$scriptsDir'..."
     foreach ($script in @("02-configure-lab.ps1", "adcreation.ps1")) {
-        $src = Join-Path $PSScriptRoot $script
+        $src = Join-Path $cseDir $script
         if (Test-Path $src) {
             Copy-Item -Path $src -Destination $scriptsDir -Force
             Write-Log "Copied '$script' to '$scriptsDir'"
         } else {
-            Write-Log "WARNING: '$script' not found in '$PSScriptRoot'"
+            Write-Log "ERROR: '$script' not found in '$cseDir' - Stage 2 will fail"
         }
     }
 
@@ -96,12 +99,17 @@ try {
     # Create DSRM secure password
     $dsrmSecure = ConvertTo-SecureString $DSRMPassword -AsPlainText -Force
 
-    # Promote to Domain Controller (triggers automatic reboot — nothing after this will run)
+    # Promote to Domain Controller
     Write-Log "Promoting server to Domain Controller for domain: $DomainName"
     Install-ADDSForest `
         -DomainName $DomainName `
         -SafeModeAdministratorPassword $dsrmSecure `
+        -NoRebootOnCompletion `
         -Force
+
+    Write-Log "DC promotion completed. Scheduling reboot in 10 seconds..."
+    shutdown /r /t 10
+    Write-Log "Stage 1 finished. Server will reboot momentarily."
 
 } catch {
     Write-Log "ERROR: $($_.Exception.Message)"
