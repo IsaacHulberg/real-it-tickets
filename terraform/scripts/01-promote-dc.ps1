@@ -91,7 +91,6 @@ try {
 
         # Use the admin credentials for the task (will become domain admin after DC promotion)
         # This is required because SYSTEM doesn't have permissions to create AD objects
-        # Use just the username without domain - after DC promotion it will resolve to the domain account
         Register-ScheduledTask -TaskName $taskName -TaskPath $taskPath -Action $action -Trigger $trigger -User $AdminUsername -Password $AdminPassword -Settings $settings -RunLevel Highest -Force | Out-Null
         Write-Log "Scheduled Task '$taskName' registered successfully with user '$AdminUsername'."
     } else {

@@ -3,6 +3,17 @@ output "dc_private_ip" {
   description = "DC01 private IP address"
 }
 
+output "admin_username" {
+  value = var.admin_username
+  description = "Administrator username for VMs"
+}
+
+output "admin_password" {
+  value = local.admin_password
+  sensitive = true
+  description = "Administrator password (run 'terraform output admin_password' to view)"
+}
+
 output "dc_public_ip" {
   value       = azurerm_public_ip.dc_pip.ip_address
   description = "DC01 public IP for RDP access"

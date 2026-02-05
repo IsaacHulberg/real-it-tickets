@@ -80,7 +80,7 @@ resource "azurerm_windows_virtual_machine" "dc" {
   size                = var.vm_size
 
   admin_username = var.admin_username
-  admin_password = var.admin_password
+  admin_password = local.admin_password
 
   network_interface_ids = [
     azurerm_network_interface.dc_nic.id
@@ -121,7 +121,7 @@ resource "azurerm_virtual_machine_extension" "dc_custom_script" {
   })
 
   protected_settings = jsonencode({
-    commandToExecute = var.setup_script_url != "" ? "powershell.exe -ExecutionPolicy Bypass -NoProfile -Command \"$ErrorActionPreference='Stop'; $scriptName='${basename(var.setup_script_url)}'; Write-Host 'Downloaded script: $scriptName'; if (Test-Path $scriptName) { Write-Host 'Executing script: $scriptName'; & .\\$scriptName -DSRMPassword '${replace(var.dsrm_password, "'", "''")}' -AdminUsername '${replace(var.admin_username, "'", "''")}' -AdminPassword '${replace(var.admin_password, "'", "''")}' -DomainName '${replace(var.domain_name, "'", "''")}' } else { Write-Error 'Script file not found: $scriptName'; exit 1 }\"" : "powershell.exe -ExecutionPolicy Bypass -Command \"Write-Host 'No setup script URL configured. Skipping automated setup.'\""
+    commandToExecute = var.setup_script_url != "" ? "powershell.exe -ExecutionPolicy Bypass -NoProfile -Command \"$ErrorActionPreference='Stop'; $scriptName='${basename(var.setup_script_url)}'; Write-Host 'Downloaded script: $scriptName'; if (Test-Path $scriptName) { Write-Host 'Executing script: $scriptName'; & .\\$scriptName -DSRMPassword '${replace(local.dsrm_password, "'", "''")}' -AdminUsername '${replace(var.admin_username, "'", "''")}' -AdminPassword '${replace(local.admin_password, "'", "''")}' -DomainName '${replace(var.domain_name, "'", "''")}' } else { Write-Error 'Script file not found: $scriptName'; exit 1 }\"" : "powershell.exe -ExecutionPolicy Bypass -Command \"Write-Host 'No setup script URL configured. Skipping automated setup.'\""
   })
 
   # Wait for VM to be ready before running script
@@ -175,7 +175,7 @@ resource "azurerm_windows_virtual_machine" "srv" {
   size                = var.vm_size
 
   admin_username = var.admin_username
-  admin_password = var.admin_password
+  admin_password = local.admin_password
 
   network_interface_ids = [
     azurerm_network_interface.srv_nic.id

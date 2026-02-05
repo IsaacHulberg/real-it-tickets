@@ -9,12 +9,14 @@ variable "resource_group_name" {
 variable "admin_username" {
   type        = string
   description = "Local admin username for VMs"
+  default     = "tempadmin"
 }
 
 variable "admin_password" {
   type        = string
   sensitive   = true
-  description = "Local admin password for VMs"
+  description = "Local admin password for VMs (leave empty to auto-generate)"
+  default     = ""
 }
 
 variable "vm_size" {
