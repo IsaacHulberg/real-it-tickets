@@ -29,11 +29,6 @@ output "srv_public_ip" {
   description = "SRV01 public IP for RDP access"
 }
 
-output "admin_username" {
-  value       = var.admin_username
-  description = "Admin username for VMs"
-}
-
 output "rdp_allowed_cidr" {
   value       = local.my_public_ip_cidr
   description = "Public IP (as /32) automatically allowed to RDP in via NSG."
