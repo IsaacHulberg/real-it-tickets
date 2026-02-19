@@ -116,7 +116,7 @@ resource "azurerm_virtual_machine_extension" "dc_custom_script" {
     fileUris = var.setup_script_url != "" ? compact([
       var.setup_script_url,
       var.configure_script_url != "" ? var.configure_script_url : "",
-      var.adcreation_script_url != "" ? var.adcreation_script_url : ""
+      var.ticket_script_url != "" ? var.ticket_script_url : ""
     ]) : []
   })
 

@@ -37,4 +37,4 @@ number_of_test_users = 30
 # Note: Must use raw.githubusercontent.com URLs for Azure CSE to download the actual file content
 setup_script_url      = "https://raw.githubusercontent.com/IsaacHulberg/real-it-tickets/main/terraform/scripts/01-promote-dc.ps1"
 configure_script_url  = "https://raw.githubusercontent.com/IsaacHulberg/real-it-tickets/main/terraform/scripts/02-configure-lab.ps1"
-adcreation_script_url = "https://raw.githubusercontent.com/IsaacHulberg/real-it-tickets/main/terraform/scripts/adcreation.ps1"
+ticket_script_url     = "https://raw.githubusercontent.com/IsaacHulberg/real-it-tickets/main/terraform/scripts/03-ticket-injection.ps1"

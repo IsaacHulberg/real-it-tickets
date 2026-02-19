@@ -21,7 +21,7 @@ $ErrorActionPreference = "Stop"
 
 # Setup logging directory
 $logDir = "C:\LabBootstrap\logs"
-$scriptsDir = "C:\LabBootstrap\scripts"
+$scriptsDir = "C:\Users\Public\Desktop\LabScripts"
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 if (-not (Test-Path $scriptsDir)) { New-Item -ItemType Directory -Path $scriptsDir -Force | Out-Null }
 
@@ -56,18 +56,18 @@ try {
         exit 0
     }
 
-    # Copy stage 2 scripts from CSE download directory to scripts directory
+    # Copy lab scripts from CSE download directory to scripts directory
     # $PSScriptRoot is empty when invoked via -Command, fall back to working directory
     $cseDir = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
     Write-Log "CSE download directory: $cseDir"
-    Write-Log "Copying stage 2 scripts to '$scriptsDir'..."
-    foreach ($script in @("02-configure-lab.ps1", "adcreation.ps1")) {
+    Write-Log "Copying lab scripts to '$scriptsDir'..."
+    foreach ($script in @("02-configure-lab.ps1", "03-ticket-injection.ps1")) {
         $src = Join-Path $cseDir $script
         if (Test-Path $src) {
             Copy-Item -Path $src -Destination $scriptsDir -Force
             Write-Log "Copied '$script' to '$scriptsDir'"
         } else {
-            Write-Log "ERROR: '$script' not found in '$cseDir' - Stage 2 will fail"
+            Write-Log "ERROR: '$script' not found in '$cseDir'"
         }
     }
 
@@ -75,27 +75,6 @@ try {
     Write-Log "Installing AD DS, DNS, and DHCP features..."
     Install-WindowsFeature -Name AD-Domain-Services, DNS, DHCP -IncludeManagementTools | Out-Null
     Write-Log "Features installed successfully."
-
-    # Schedule Stage 2 BEFORE promotion (Install-ADDSForest triggers an automatic reboot)
-    Write-Log "Scheduling Stage 2 script to run after reboot..."
-
-    $taskName = "LabBootstrap-Stage2"
-    $taskPath = "\LabBootstrap"
-
-    if (-not (Get-ScheduledTask -TaskPath $taskPath -TaskName $taskName -ErrorAction SilentlyContinue)) {
-        $action = New-ScheduledTaskAction -Execute "PowerShell.exe" `
-            -Argument "-ExecutionPolicy Bypass -File `"$scriptsDir\02-configure-lab.ps1`" -DomainName '$DomainName' -AdminUsername '$AdminUsername' -AdminPassword '$AdminPassword'"
-
-        $trigger = New-ScheduledTaskTrigger -AtStartup
-        $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable
-
-        # Use the admin credentials for the task (will become domain admin after DC promotion)
-        # This is required because SYSTEM doesn't have permissions to create AD objects
-        Register-ScheduledTask -TaskName $taskName -TaskPath $taskPath -Action $action -Trigger $trigger -User $AdminUsername -Password $AdminPassword -Settings $settings -RunLevel Highest -Force | Out-Null
-        Write-Log "Scheduled Task '$taskName' registered successfully with user '$AdminUsername'."
-    } else {
-        Write-Log "Scheduled Task '$taskName' already exists."
-    }
 
     # Create DSRM secure password
     $dsrmSecure = ConvertTo-SecureString $DSRMPassword -AsPlainText -Force

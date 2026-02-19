@@ -35,9 +35,9 @@ variable "configure_script_url" {
   default     = ""
 }
 
-variable "adcreation_script_url" {
+variable "ticket_script_url" {
   type        = string
-  description = "URL to download the branch OU creation script (adcreation.ps1). If empty, Setup-AD-Lab.ps1 will look for it in the same directory."
+  description = "URL to download the ticket injection script (03-ticket-injection.ps1)."
   default     = ""
 }
 
