@@ -1,15 +1,7 @@
 <# 
-Simple ticket injection: update a user's proxyAddresses.
-Run manually after DC promotion and lab configuration.
+Ticket injection: add jimmy.smith@lab.local to John Smith.
+Run from elevated PowerShell on the DC.
 #>
-
-param(
-    [Parameter(Mandatory = $true)]
-    [string]$SamAccountName,
-
-    [Parameter(Mandatory = $true)]
-    [string]$ProxyAddress
-)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -23,11 +15,11 @@ try {
 
 Import-Module ActiveDirectory
 
+$targetSam = "jsmith01"
+$proxyAddress = "SMTP:jimmy.smith@lab.local"
+
 try {
-    # Add a single proxy address entry to the user
-    Set-ADUser -Identity $SamAccountName -Add @{ proxyAddresses = $ProxyAddress }
-    Write-Host "Updated proxyAddresses for '$SamAccountName' with '$ProxyAddress'."
+    Set-ADUser -Identity $targetSam -Add @{ proxyAddresses = $proxyAddress }
 } catch {
-    Write-Error "Failed to update proxyAddresses for '$SamAccountName': $($_.Exception.Message)"
     exit 1
 }
