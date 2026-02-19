@@ -14,6 +14,13 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# Avoid execution policy prompts when launched via double-click
+try {
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+} catch {
+    # Ignore if policy cannot be set in this context
+}
+
 Import-Module ActiveDirectory
 
 try {

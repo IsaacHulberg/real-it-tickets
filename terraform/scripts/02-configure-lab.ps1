@@ -11,7 +11,7 @@
 param(
     [string]$DomainName = "lab.local",
     [string]$AdminUsername = "tempadmin",
-    [string]$AdminPassword = "Temppassword123!@#",
+    [string]$AdminPassword = "tempadmin123!@#",
     [string]$DHCPScopeStart = "10.0.1.100",
     [string]$DHCPScopeEnd = "10.0.1.200",
     [int]$NumberOfUsers = 30
@@ -19,6 +19,13 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+# Avoid execution policy prompts when launched via double-click
+try {
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+} catch {
+    # Ignore if policy cannot be set in this context
+}
 
 # Setup logging and directories
 $logDir = "C:\LabBootstrap\logs"
