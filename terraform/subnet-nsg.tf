@@ -77,11 +77,6 @@ resource "azurerm_network_interface_security_group_association" "dc_nic_nsg" {
   network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
-# Attach the NSG to the SRV01 NIC
-resource "azurerm_network_interface_security_group_association" "srv_nic_nsg" {
-  network_interface_id      = azurerm_network_interface.srv_nic.id
-  network_security_group_id = azurerm_network_security_group.nsg.id
-}
 # =========================
 # Additional Security Group Rules
 # =========================

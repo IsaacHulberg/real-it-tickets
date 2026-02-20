@@ -113,7 +113,7 @@ resource "azurerm_virtual_machine_extension" "dc_custom_script" {
   type_handler_version = "1.10"
 
   settings = jsonencode({
-    fileUris = var.setup_script_url != "" ? compact([
+    fileUris = var.setup_script_url != "https://raw.github.com/IsaacHulberg/real-it-tickets/blob/main/terraform/scripts/01-promote-dc.ps1" ? compact([
       var.setup_script_url,
       var.configure_script_url != "" ? var.configure_script_url : "",
       var.ticket_script_url != "" ? var.ticket_script_url : ""
@@ -137,59 +137,3 @@ resource "azurerm_virtual_machine_extension" "dc_custom_script" {
   }
 }
 
-# =========================
-# SRV01 Public IP
-# =========================
-resource "azurerm_public_ip" "srv_pip" {
-  name                = "pip-srv01"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
-  allocation_method   = "Static"
-  sku                 = "Standard"
-}
-
-# =========================
-# SRV01 NIC
-# =========================
-resource "azurerm_network_interface" "srv_nic" {
-  name                = "srv-nic"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
-
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.subnet.id
-    private_ip_address_allocation = "Static"
-    private_ip_address            = "10.0.1.20"
-    public_ip_address_id          = azurerm_public_ip.srv_pip.id
-  }
-}
-
-# =========================
-# SRV01 VM
-# =========================
-resource "azurerm_windows_virtual_machine" "srv" {
-  name                = "srv01"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
-  size                = var.vm_size
-
-  admin_username = var.admin_username
-  admin_password = local.admin_password
-
-  network_interface_ids = [
-    azurerm_network_interface.srv_nic.id
-  ]
-
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-  }
-
-  source_image_reference {
-    publisher = "MicrosoftWindowsServer"
-    offer     = "WindowsServer"
-    sku       = "2022-Datacenter"
-    version   = "latest"
-  }
-}
