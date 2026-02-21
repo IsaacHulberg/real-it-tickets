@@ -41,6 +41,12 @@ variable "ticket_script_url" {
   default     = ""
 }
 
+variable "lockout_ticket_script_url" {
+  type        = string
+  description = "URL to download the account lockout ticket script (05-lockout-ticket.ps1)."
+  default     = ""
+}
+
 variable "domain_name" {
   type        = string
   description = "Active Directory domain name"

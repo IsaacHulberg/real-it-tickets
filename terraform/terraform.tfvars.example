@@ -38,3 +38,4 @@ number_of_test_users = 30
 setup_script_url      = "https://raw.githubusercontent.com/IsaacHulberg/real-it-tickets/main/terraform/scripts/01-promote-dc.ps1"
 configure_script_url  = "https://raw.githubusercontent.com/IsaacHulberg/real-it-tickets/main/terraform/scripts/02-configure-lab.ps1"
 ticket_script_url     = "https://raw.githubusercontent.com/IsaacHulberg/real-it-tickets/main/terraform/scripts/03-ticket-injection.ps1"
+lockout_ticket_script_url = "https://raw.githubusercontent.com/IsaacHulberg/real-it-tickets/main/terraform/scripts/05-lockout-ticket.ps1"

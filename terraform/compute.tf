@@ -113,10 +113,11 @@ resource "azurerm_virtual_machine_extension" "dc_custom_script" {
   type_handler_version = "1.10"
 
   settings = jsonencode({
-    fileUris = var.setup_script_url != "https://raw.github.com/IsaacHulberg/real-it-tickets/blob/main/terraform/scripts/01-promote-dc.ps1" ? compact([
+    fileUris = var.setup_script_url != "" ? compact([
       var.setup_script_url,
       var.configure_script_url != "" ? var.configure_script_url : "",
-      var.ticket_script_url != "" ? var.ticket_script_url : ""
+      var.ticket_script_url != "" ? var.ticket_script_url : "",
+      var.lockout_ticket_script_url != "" ? var.lockout_ticket_script_url : ""
     ]) : []
   })
 
