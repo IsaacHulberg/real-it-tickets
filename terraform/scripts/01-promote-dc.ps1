@@ -61,7 +61,7 @@ try {
     $cseDir = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
     Write-Log "CSE download directory: $cseDir"
     Write-Log "Copying lab scripts to '$scriptsDir'..."
-    foreach ($script in @("02-configure-lab.ps1", "03-ticket-injection.ps1")) {
+    foreach ($script in @("02-configure-lab.ps1", "03-ticket-injection.ps1", "05-lockout-ticket.ps1")) {
         $src = Join-Path $cseDir $script
         if (Test-Path $src) {
             Copy-Item -Path $src -Destination $scriptsDir -Force
